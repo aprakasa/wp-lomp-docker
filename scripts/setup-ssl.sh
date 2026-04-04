@@ -25,6 +25,7 @@ fi
 
 OLS_CONTAINER="${COMPOSE_PROJECT_NAME}-ols"
 SSL_DIR="$(cd "$(dirname "$0")/.." && pwd)/ssl"
+SSL_CONTAINER_DIR="/usr/local/lsws/conf/vhosts/localhost/ssl"
 
 echo "[SSL] Checking if OLS container is running..."
 if ! docker ps --format '{{.Names}}' | grep -q "^${OLS_CONTAINER}$"; then
@@ -78,19 +79,13 @@ fi
 echo '[SSL] Requesting certificate for '\${DOMAIN}'...'
 /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt --force
 
-echo '[SSL] Installing certificate to temp location...'
+echo '[SSL] Installing certificate...'
 /root/.acme.sh/acme.sh --install-cert -d \"\${DOMAIN}\" \
-    --key-file /tmp/ssl.key \
-    --fullchain-file /tmp/ssl.crt \
+    --key-file ${SSL_CONTAINER_DIR}/ssl.key \
+    --fullchain-file ${SSL_CONTAINER_DIR}/ssl.crt \
     --reloadcmd 'echo done'
+chmod 666 ${SSL_CONTAINER_DIR}/ssl.key ${SSL_CONTAINER_DIR}/ssl.crt
 "
-
-echo "[SSL] Copying certs to ${SSL_DIR}/..."
-mkdir -p "${SSL_DIR}"
-rm -f "${SSL_DIR}/ssl.key" "${SSL_DIR}/ssl.crt" 2>/dev/null || sudo rm -f "${SSL_DIR}/ssl.key" "${SSL_DIR}/ssl.crt"
-docker cp "${OLS_CONTAINER}:/tmp/ssl.key" "${SSL_DIR}/ssl.key"
-docker cp "${OLS_CONTAINER}:/tmp/ssl.crt" "${SSL_DIR}/ssl.crt"
-chmod 644 "${SSL_DIR}/ssl.key" "${SSL_DIR}/ssl.crt" 2>/dev/null || sudo chmod 644 "${SSL_DIR}/ssl.key" "${SSL_DIR}/ssl.crt"
 
 echo "[SSL] Restarting OLS to load new certificates..."
 docker compose restart openlitespeed
