@@ -12,7 +12,7 @@ wait_for_mysql() {
     local max_attempts=30
     local attempt=0
     while [ $attempt -lt $max_attempts ]; do
-        if mysql -u root -S /var/run/mysqld/mysqld.sock -e "SELECT 1" &>/dev/null; then
+        if mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -S /var/run/mysqld/mysqld.sock -e "SELECT 1" &>/dev/null; then
             log "MariaDB is ready"
             return 0
         fi
@@ -100,5 +100,12 @@ install_wordpress
 setup_redis_cache
 
 log "Starting OpenLiteSpeed..."
-exec /usr/local/lsws/bin/lswsctrl start
-wait
+/usr/local/lsws/bin/lswsctrl start
+
+while true; do
+    if ! /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -q 'litespeed is running'; then
+        log "OpenLiteSpeed is not running, exiting"
+        break
+    fi
+    sleep 60
+done

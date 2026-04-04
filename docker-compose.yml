@@ -11,8 +11,9 @@ services:
       - ./scripts/entrypoint.sh:/usr/local/bin/wp-entrypoint.sh:ro
       - ./wordpress:/var/www/vhosts/${DOMAIN}/html
       - ./ols/httpd.conf:/usr/local/lsws/conf/httpd_config.conf:ro
-      - ./ols/vhost.conf:/usr/local/lsws/conf/templates/docker.conf:ro
-      - ./ssl:/usr/local/lsws/conf/vhosts/${DOMAIN}
+      - ./ols/vhost.conf:/usr/local/lsws/conf/vhosts/${DOMAIN}/vhconf.conf:ro
+      - ./ssl/ssl.key:/usr/local/lsws/conf/vhosts/${DOMAIN}/ssl.key:ro
+      - ./ssl/ssl.crt:/usr/local/lsws/conf/vhosts/${DOMAIN}/ssl.crt:ro
       - ./logs:/usr/local/lsws/logs
       - ols_data:/usr/local/lsws
       - redis_socket:/var/run/redis
@@ -20,6 +21,7 @@ services:
     environment:
       TZ: UTC
       DOMAIN: ${DOMAIN}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
