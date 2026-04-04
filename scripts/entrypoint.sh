@@ -24,6 +24,22 @@ wait_for_mysql() {
     return 1
 }
 
+wait_for_redis() {
+    local max_attempts=30
+    local attempt=0
+    while [ $attempt -lt $max_attempts ]; do
+        if [ -S /var/run/redis/redis.sock ]; then
+            log "Redis is ready"
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        log "Waiting for Redis... (attempt $attempt/$max_attempts)"
+        sleep 2
+    done
+    log "ERROR: Redis did not become ready in time"
+    return 1
+}
+
 install_wp_cli() {
     if [ ! -f /usr/local/bin/wp ]; then
         log "Installing wp-cli..."
@@ -94,20 +110,21 @@ setup_lscache() {
 }
 
 fix_permissions() {
-    log "Fixing wp-content permissions..."
-    chown -R nobody:nogroup "${WP_ROOT}/wp-content"
+    log "Fixing WordPress file permissions..."
+    find "${WP_ROOT}" -not -user nobody -exec chown nobody:nogroup {} +
 }
 
 generate_self_signed_cert() {
     local ssl_dir="/usr/local/lsws/conf/vhosts/localhost/ssl"
-    if [ ! -f "${ssl_dir}/ssl.key" ] || [ ! -f "${ssl_dir}/ssl.crt" ]; then
+    if [ ! -s "${ssl_dir}/ssl.key" ] || [ ! -s "${ssl_dir}/ssl.crt" ]; then
         log "Generating self-signed SSL certificate..."
         mkdir -p "${ssl_dir}"
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
             -keyout "${ssl_dir}/ssl.key" \
             -out "${ssl_dir}/ssl.crt" \
             -subj "/CN=localhost" 2>/dev/null
-        chmod 666 "${ssl_dir}/ssl.key" "${ssl_dir}/ssl.crt"
+        chmod 640 "${ssl_dir}/ssl.key"
+        chmod 644 "${ssl_dir}/ssl.crt"
     fi
 }
 
@@ -115,6 +132,7 @@ log "Starting entrypoint for domain: ${DOMAIN}"
 
 install_wp_cli
 wait_for_mysql
+wait_for_redis
 download_wordpress
 generate_wp_config
 install_wordpress
@@ -125,10 +143,25 @@ generate_self_signed_cert
 log "Starting OpenLiteSpeed..."
 /usr/local/lsws/bin/lswsctrl start
 
-while true; do
-    if ! /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -q 'litespeed is running'; then
-        log "OpenLiteSpeed is not running, exiting"
-        break
-    fi
-    sleep 60
-done
+shutdown() {
+    log "Caught signal, stopping OpenLiteSpeed..."
+    /usr/local/lsws/bin/lswsctrl stop
+    exit 0
+}
+trap shutdown SIGTERM SIGINT
+
+OLS_PID="$(cat /usr/local/lsws/logs/httpd.pid 2>/dev/null)"
+if [ -n "${OLS_PID}" ]; then
+    while kill -0 "${OLS_PID}" 2>/dev/null; do
+        sleep 5
+    done
+    log "OpenLiteSpeed process exited"
+else
+    while true; do
+        if ! /usr/local/lsws/bin/lswsctrl status 2>/dev/null | grep -q 'litespeed is running'; then
+            log "OpenLiteSpeed is not running, exiting"
+            break
+        fi
+        sleep 5
+    done
+fi
