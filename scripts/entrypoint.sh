@@ -80,13 +80,14 @@ setup_lscache() {
             log "Installing LSCache plugin..."
             ${WP_CLI} plugin install litespeed-cache --activate
         fi
+        ${WP_CLI} plugin activate litespeed-cache 2>/dev/null || true
         log "Configuring LSCache Redis object cache..."
-        ${WP_CLI} litespeed-option set object-kind 1
-        ${WP_CLI} litespeed-option set object-host '/var/run/redis/redis.sock'
+        ${WP_CLI} litespeed-option set object-kind 1 || true
+        ${WP_CLI} litespeed-option set object-host '/var/run/redis/redis.sock' || true
         ${WP_CLI} litespeed-option set object-port '' || true
-        ${WP_CLI} litespeed-option set object-life 360
-        ${WP_CLI} litespeed-option set object-persistent 1
-        ${WP_CLI} litespeed-option set object-admin 1
+        ${WP_CLI} litespeed-option set object-life 360 || true
+        ${WP_CLI} litespeed-option set object-persistent 1 || true
+        ${WP_CLI} litespeed-option set object-admin 1 || true
         ${WP_CLI} litespeed-option set object 1 || true
         log "LSCache Redis object cache configured"
     fi
