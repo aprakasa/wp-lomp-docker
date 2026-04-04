@@ -19,7 +19,7 @@ services:
       - redis_socket:/var/run/redis
       - mariadb_socket:/var/run/mysqld
     environment:
-      TZ: UTC
+      TZ: ${TZ:-UTC}
       DOMAIN: ${DOMAIN}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
