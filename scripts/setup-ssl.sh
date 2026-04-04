@@ -76,7 +76,7 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 echo '[SSL] Requesting certificate for '\${DOMAIN}'...'
-/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt
+/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt --force
 
 echo '[SSL] Installing certificate to temp location...'
 /root/.acme.sh/acme.sh --install-cert -d \"\${DOMAIN}\" \
