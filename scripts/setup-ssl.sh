@@ -35,7 +35,16 @@ fi
 
 echo "[SSL] Checking DNS resolution for ${DOMAIN}..."
 SERVER_IP=$(curl -s https://ifconfig.me 2>/dev/null || curl -s https://api.ipify.org 2>/dev/null)
-DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1 || getent hosts "${DOMAIN}" 2>/dev/null | awk '{print $1}')
+DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1)
+if [ -z "${DOMAIN_IP}" ]; then
+    DOMAIN_IP=$(getent hosts "${DOMAIN}" 2>/dev/null | awk '{print $1}')
+fi
+if [ -z "${DOMAIN_IP}" ]; then
+    DOMAIN_IP=$(host "${DOMAIN}" 2>/dev/null | grep 'has address' | head -1 | awk '{print $4}')
+fi
+if [ -z "${DOMAIN_IP}" ]; then
+    DOMAIN_IP=$(nslookup "${DOMAIN}" 2>/dev/null | grep 'Address' | tail -1 | awk '{print $2}')
+fi
 
 if [ -z "${DOMAIN_IP}" ]; then
     echo "ERROR: ${DOMAIN} does not resolve to any IP address."
