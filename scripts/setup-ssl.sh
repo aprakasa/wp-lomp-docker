@@ -1,8 +1,17 @@
 #!/bin/bash
 set -e
 
-DOMAIN="${DOMAIN:-$1}"
-EMAIL="${EMAIL:-$2}"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ENV_FILE="${SCRIPT_DIR}/../.env"
+
+if [ -f "${ENV_FILE}" ]; then
+    set -a
+    source "${ENV_FILE}"
+    set +a
+fi
+
+DOMAIN="${1:-$DOMAIN}"
+EMAIL="${2:-$EMAIL}"
 
 if [ -z "${DOMAIN}" ] || [ -z "${EMAIL}" ]; then
     echo "Usage: ./scripts/setup-ssl.sh [DOMAIN] [EMAIL]"
@@ -26,7 +35,7 @@ fi
 
 echo "[SSL] Checking DNS resolution for ${DOMAIN}..."
 SERVER_IP=$(curl -s https://ifconfig.me 2>/dev/null || curl -s https://api.ipify.org 2>/dev/null)
-DOMAIN_IP=$(dig +short "${DOMAIN}" | tail -1)
+DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1 || getent hosts "${DOMAIN}" 2>/dev/null | awk '{print $1}')
 
 if [ -z "${DOMAIN_IP}" ]; then
     echo "ERROR: ${DOMAIN} does not resolve to any IP address."
