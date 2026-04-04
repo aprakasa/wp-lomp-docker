@@ -96,4 +96,5 @@ echo "[SSL] Restarting OLS to load new certificates..."
 docker compose restart openlitespeed
 
 echo "[SSL] Done! HTTPS should now be active for ${DOMAIN}"
-echo "[SSL] Certificate will auto-renew via acme.sh cron job inside the container."
+echo "[SSL] NOTE: Auto-renewal is NOT configured (containers are ephemeral)."
+echo "[SSL] Run this script again before the certificate expires (90 days), or set up a host cron job."
