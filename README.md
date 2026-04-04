@@ -40,7 +40,7 @@ Or set `DOMAIN` and `EMAIL` in `.env` and run:
 | WordPress | latest | Auto-installed via WP-CLI |
 | WP-CLI | latest | Auto-installed in entrypoint |
 | LSCache | latest | Full-page cache + Redis object cache |
-| acme.sh | latest | Let's Encrypt SSL via DNS validation |
+| acme.sh | latest | Let's Encrypt SSL via HTTP-01 webroot validation |
 
 ## Architecture
 
@@ -68,14 +68,13 @@ All configuration is done via `.env` (copy from `.env.example`):
 | `MYSQL_DATABASE` | `wordpress` | Database name |
 | `MYSQL_USER` | `wp_user` | Database user |
 | `MYSQL_PASSWORD` | - | Database password |
-| `INNODB_BUFFER_POOL_SIZE` | `256M` | MariaDB InnoDB buffer |
 | `REDIS_MAXMEMORY` | `64mb` | Redis max memory |
 | `WP_ADMIN_USER` | `admin` | WordPress admin username |
 | `WP_ADMIN_PASSWORD` | - | WordPress admin password |
 | `WP_ADMIN_EMAIL` | - | WordPress admin email |
 | `WP_SITE_TITLE` | `WordPress` | Site title |
 | `WORDPRESS_TABLE_PREFIX` | `wp_` | Database table prefix |
-| `OLS_WORKERS` | `4` | OLS worker processes |
+| `OLS_WORKERS` | `4` | PHP LSAPI children (worker processes) |
 | `TZ` | `UTC` | Timezone |
 
 ### Production Domain Setup

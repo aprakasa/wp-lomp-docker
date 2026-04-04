@@ -10,7 +10,7 @@ services:
     volumes:
       - ./scripts/entrypoint.sh:/usr/local/bin/wp-entrypoint.sh:ro
       - ./wordpress:/var/www/vhosts/localhost/html
-      - ./ols/httpd.conf:/usr/local/lsws/conf/httpd_config.conf:ro
+      - ./ols/httpd.conf:/usr/local/lsws/conf/httpd_config.conf
       - ./ols/vhost.conf:/usr/local/lsws/conf/vhosts/localhost/vhconf.conf:ro
       - ./ols/php.ini:/usr/local/lsws/lsphp83/etc/php/8.3/litespeed/php.ini:ro
       - ./ssl:/usr/local/lsws/conf/vhosts/localhost/ssl
@@ -24,6 +24,7 @@ services:
       TZ: ${TZ:-UTC}
       DOMAIN: ${DOMAIN}
       EMAIL: ${EMAIL:-}
+      OLS_WORKERS: ${OLS_WORKERS:-4}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
