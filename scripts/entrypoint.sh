@@ -8,10 +8,26 @@ log() {
     echo "[entrypoint] $*"
 }
 
+validate_passwords() {
+    # Reject weak default passwords
+    if [[ "${WP_ADMIN_PASSWORD}" == "changeme" ]]; then
+        log "ERROR: WP_ADMIN_PASSWORD uses default value 'changeme'. Please set a strong password in .env"
+        exit 1
+    fi
+    if [[ "${MYSQL_PASSWORD}" == "secure_password_change_me" ]]; then
+        log "ERROR: MYSQL_PASSWORD uses default value. Please set a strong password in .env"
+        exit 1
+    fi
+    if [[ "${MYSQL_ROOT_PASSWORD}" == "root_secure_password_change_me" ]]; then
+        log "ERROR: MYSQL_ROOT_PASSWORD uses default value. Please set a strong password in .env"
+        exit 1
+    fi
+}
+
 wait_for_mysql() {
     local max_attempts=30
     local attempt=0
-    while [ $attempt -lt $max_attempts ]; do
+    while [ "$attempt" -lt "$max_attempts" ]; do
         if mysql -u root -p"${MYSQL_ROOT_PASSWORD}" -S /var/run/mysqld/mysqld.sock -e "SELECT 1" &>/dev/null; then
             log "MariaDB is ready"
             return 0
@@ -27,7 +43,7 @@ wait_for_mysql() {
 wait_for_redis() {
     local max_attempts=30
     local attempt=0
-    while [ $attempt -lt $max_attempts ]; do
+    while [ "$attempt" -lt "$max_attempts" ]; do
         if [ -S /var/run/redis/redis.sock ]; then
             log "Redis is ready"
             return 0
@@ -43,8 +59,16 @@ wait_for_redis() {
 install_wp_cli() {
     if [ ! -f /usr/local/bin/wp ]; then
         log "Installing wp-cli..."
-        curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp
-        chmod +x /usr/local/bin/wp
+        curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar
+        curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar.sha512 -o /tmp/wp-cli.phar.sha512
+        if sha512sum -c /tmp/wp-cli.phar.sha512 &>/dev/null; then
+            mv /tmp/wp-cli.phar /usr/local/bin/wp
+            chmod +x /usr/local/bin/wp
+            log "wp-cli installed and verified"
+        else
+            log "ERROR: wp-cli checksum verification failed"
+            exit 1
+        fi
     fi
 }
 
@@ -128,7 +152,17 @@ generate_self_signed_cert() {
     fi
 }
 
+configure_ols_workers() {
+    local workers="${OLS_WORKERS:-4}"
+    local config_file="/usr/local/lsws/conf/httpd_config.conf"
+    if [ -f "${config_file}" ]; then
+        log "Configuring OLS workers to ${workers}..."
+        sed -i "s/PHP_LSAPI_CHILDREN=[0-9]*/PHP_LSAPI_CHILDREN=${workers}/" "${config_file}"
+    fi
+}
+
 log "Starting entrypoint for domain: ${DOMAIN}"
+validate_passwords
 
 install_wp_cli
 wait_for_mysql
@@ -139,6 +173,7 @@ install_wordpress
 setup_lscache
 fix_permissions
 generate_self_signed_cert
+configure_ols_workers
 
 log "Starting OpenLiteSpeed..."
 /usr/local/lsws/bin/lswsctrl start
