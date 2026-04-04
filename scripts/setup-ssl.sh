@@ -75,8 +75,8 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
     curl https://get.acme.sh | sh -s email=\${EMAIL}
 fi
 
-echo '[SSL] Requesting certificate for \${DOMAIN}...'
-/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\"
+echo '[SSL] Requesting certificate for '\${DOMAIN}'...'
+/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt
 
 echo '[SSL] Installing certificate to temp location...'
 /root/.acme.sh/acme.sh --install-cert -d \"\${DOMAIN}\" \
