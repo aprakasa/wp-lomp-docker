@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-WP_ROOT="/var/www/vhosts/${DOMAIN}/html"
+WP_ROOT="/var/www/vhosts/localhost/html"
 WP_CLI="wp --path=${WP_ROOT} --allow-root"
 
 log() {

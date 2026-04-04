@@ -9,11 +9,11 @@ services:
       - "7080:7080"
     volumes:
       - ./scripts/entrypoint.sh:/usr/local/bin/wp-entrypoint.sh:ro
-      - ./wordpress:/var/www/vhosts/${DOMAIN}/html
+      - ./wordpress:/var/www/vhosts/localhost/html
       - ./ols/httpd.conf:/usr/local/lsws/conf/httpd_config.conf:ro
-      - ./ols/vhost.conf:/usr/local/lsws/conf/vhosts/${DOMAIN}/vhconf.conf:ro
-      - ./ssl/ssl.key:/usr/local/lsws/conf/vhosts/${DOMAIN}/ssl.key:ro
-      - ./ssl/ssl.crt:/usr/local/lsws/conf/vhosts/${DOMAIN}/ssl.crt:ro
+      - ./ols/vhost.conf:/usr/local/lsws/conf/vhosts/localhost/vhconf.conf:ro
+      - ./ssl/ssl.key:/usr/local/lsws/conf/vhosts/localhost/ssl.key:ro
+      - ./ssl/ssl.crt:/usr/local/lsws/conf/vhosts/localhost/ssl.crt:ro
       - ./logs:/usr/local/lsws/logs
       - ols_data:/usr/local/lsws
       - redis_socket:/var/run/redis

@@ -80,10 +80,7 @@ All configuration is done via `.env` (copy from `.env.example`):
 
 ### Production Domain Setup
 
-For production, update `DOMAIN` in `.env` and also update the domain references in `ols/httpd.conf`:
-
-1. Replace all `localhost` occurrences with your domain name in the `virtualHost`, `listener HTTP`, and `listener HTTPS` blocks
-2. The `ols/vhost.conf` uses template variables (`$VH_ROOT`, `$VH_NAME`) and doesn't need changes
+Set `DOMAIN` in `.env` to your domain name. All internal paths use `localhost` — no config file edits needed. The OLS listener uses a catch-all (`*`) so it responds to any domain pointing to the server.
 
 ## WordPress Files
 

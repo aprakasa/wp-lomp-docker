@@ -68,7 +68,7 @@ set -e
 
 DOMAIN='${DOMAIN}'
 EMAIL='${EMAIL}'
-WEBROOT='/var/www/vhosts/${DOMAIN}/html'
+WEBROOT='/var/www/vhosts/localhost/html'
 
 echo '[SSL] Installing acme.sh if needed...'
 if [ ! -f /root/.acme.sh/acme.sh ]; then
