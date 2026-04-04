@@ -77,7 +77,10 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 echo '[SSL] Requesting certificate for '\${DOMAIN}'...'
-/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt --force
+if ! /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt; then
+    echo '[SSL] Initial issue failed, retrying with --force...'
+    /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt --force
+fi
 
 echo '[SSL] Installing certificate...'
 /root/.acme.sh/acme.sh --install-cert -d \"\${DOMAIN}\" \
