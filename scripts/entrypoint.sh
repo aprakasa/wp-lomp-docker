@@ -56,9 +56,6 @@ define('WP_DEBUG_LOG', false);
 define('WP_MEMORY_LIMIT', '256M');
 define('WP_MAX_MEMORY_LIMIT', '512M');
 define('DISALLOW_FILE_EDIT', true);
-define('WP_REDIS_PATH', '/var/run/redis/redis.sock');
-define('WP_REDIS_DATABASE', 0);
-define('WP_CACHE', true);
 EXTRA
         chown nobody:nogroup "${WP_ROOT}/wp-config.php"
     fi
@@ -77,16 +74,21 @@ install_wordpress() {
     fi
 }
 
-setup_redis_cache() {
+setup_lscache() {
     if ${WP_CLI} core is-installed 2>/dev/null; then
-        if ! ${WP_CLI} plugin is-installed redis-cache 2>/dev/null; then
-            log "Installing Redis Cache plugin..."
-            ${WP_CLI} plugin install redis-cache --activate
+        if ! ${WP_CLI} plugin is-installed litespeed-cache 2>/dev/null; then
+            log "Installing LSCache plugin..."
+            ${WP_CLI} plugin install litespeed-cache --activate
         fi
-        if ! ${WP_CLI} redis status 2>/dev/null | grep -q "Connected"; then
-            log "Enabling Redis object cache..."
-            ${WP_CLI} redis enable 2>/dev/null || true
-        fi
+        log "Configuring LSCache Redis object cache..."
+        ${WP_CLI} litespeed-option set object-kind 1
+        ${WP_CLI} litespeed-option set object-host '/var/run/redis/redis.sock'
+        ${WP_CLI} litespeed-option set object-port '' || true
+        ${WP_CLI} litespeed-option set object-life 360
+        ${WP_CLI} litespeed-option set object-persistent 1
+        ${WP_CLI} litespeed-option set object-admin 1
+        ${WP_CLI} litespeed-option set object 1 || true
+        log "LSCache Redis object cache configured"
     fi
 }
 
@@ -97,7 +99,7 @@ wait_for_mysql
 download_wordpress
 generate_wp_config
 install_wordpress
-setup_redis_cache
+setup_lscache
 
 log "Starting OpenLiteSpeed..."
 /usr/local/lsws/bin/lswsctrl start
