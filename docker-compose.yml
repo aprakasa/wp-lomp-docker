@@ -6,7 +6,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "7080:7080"
+      - "127.0.0.1:7080:7080"
     volumes:
       - ./scripts/entrypoint.sh:/usr/local/bin/wp-entrypoint.sh:ro
       - ./wordpress:/var/www/vhosts/localhost/html
@@ -15,13 +15,15 @@ services:
       - ./ols/php.ini:/usr/local/lsws/lsphp83/etc/php/8.3/litespeed/php.ini:ro
       - ./ssl:/usr/local/lsws/conf/vhosts/localhost/ssl
       - ./logs:/usr/local/lsws/logs
-      - ols_data:/usr/local/lsws
+      - ols_admin:/usr/local/lsws/admin
+      - ols_tmp:/tmp/lshttpd
       - acme_data:/root/.acme.sh
       - redis_socket:/var/run/redis
       - mariadb_socket:/var/run/mysqld
     environment:
       TZ: ${TZ:-UTC}
       DOMAIN: ${DOMAIN}
+      EMAIL: ${EMAIL:-}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -33,9 +35,9 @@ services:
       WP_SITE_TITLE: ${WP_SITE_TITLE:-WordPress}
     depends_on:
       mariadb:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   mariadb:
@@ -50,6 +52,11 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     restart: unless-stopped
 
   redis:
@@ -64,7 +71,12 @@ services:
       --maxmemory-policy allkeys-lru
       --save 60 1
       --unixsocket /var/run/redis/redis.sock
-      --unixsocketperm 777"
+      --unixsocketperm 770"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-s", "/var/run/redis/redis.sock", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
     restart: unless-stopped
 
 volumes:
@@ -72,7 +84,8 @@ volumes:
   mariadb_socket:
   redis_data:
   redis_socket:
-  ols_data:
+  ols_admin:
+  ols_tmp:
   acme_data:
 
 networks:
