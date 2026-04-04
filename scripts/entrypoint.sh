@@ -92,6 +92,18 @@ setup_lscache() {
     fi
 }
 
+generate_self_signed_cert() {
+    local ssl_dir="/usr/local/lsws/conf/vhosts/localhost/ssl"
+    if [ ! -f "${ssl_dir}/ssl.key" ] || [ ! -f "${ssl_dir}/ssl.crt" ]; then
+        log "Generating self-signed SSL certificate..."
+        mkdir -p "${ssl_dir}"
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout "${ssl_dir}/ssl.key" \
+            -out "${ssl_dir}/ssl.crt" \
+            -subj "/CN=localhost" 2>/dev/null
+    fi
+}
+
 log "Starting entrypoint for domain: ${DOMAIN}"
 
 install_wp_cli
@@ -100,6 +112,7 @@ download_wordpress
 generate_wp_config
 install_wordpress
 setup_lscache
+generate_self_signed_cert
 
 log "Starting OpenLiteSpeed..."
 /usr/local/lsws/bin/lswsctrl start

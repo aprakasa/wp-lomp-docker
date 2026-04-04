@@ -12,8 +12,7 @@ services:
       - ./wordpress:/var/www/vhosts/localhost/html
       - ./ols/httpd.conf:/usr/local/lsws/conf/httpd_config.conf:ro
       - ./ols/vhost.conf:/usr/local/lsws/conf/vhosts/localhost/vhconf.conf:ro
-      - ./ssl/ssl.key:/usr/local/lsws/conf/vhosts/localhost/ssl.key:ro
-      - ./ssl/ssl.crt:/usr/local/lsws/conf/vhosts/localhost/ssl.crt:ro
+      - ./ssl:/usr/local/lsws/conf/vhosts/localhost/ssl
       - ./logs:/usr/local/lsws/logs
       - ols_data:/usr/local/lsws
       - redis_socket:/var/run/redis
