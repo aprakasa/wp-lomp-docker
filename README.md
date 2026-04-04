@@ -62,6 +62,13 @@ All configuration is done via `.env` (copy from `.env.example`):
 | `WP_ADMIN_EMAIL` | - | WordPress admin email |
 | `WP_SITE_TITLE` | `WordPress` | Site title |
 
+### Production Domain Setup
+
+For production, update `DOMAIN` in `.env` and also update the domain references in `ols/httpd.conf`:
+
+1. Replace all `localhost` occurrences with your domain name in the `virtualHost`, `listener HTTP`, and `listener HTTPS` blocks
+2. The `ols/vhost.conf` uses template variables (`$VH_ROOT`, `$VH_NAME`) and doesn't need changes
+
 ## WordPress Files
 
 WordPress files are in `./wordpress/` on the host, giving you direct filesystem access. This directory is created and populated automatically on first startup.
