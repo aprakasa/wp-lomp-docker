@@ -102,6 +102,7 @@ generate_self_signed_cert() {
             -keyout "${ssl_dir}/ssl.key" \
             -out "${ssl_dir}/ssl.crt" \
             -subj "/CN=localhost" 2>/dev/null
+        chmod 666 "${ssl_dir}/ssl.key" "${ssl_dir}/ssl.crt"
     fi
 }
 

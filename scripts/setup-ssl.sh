@@ -89,6 +89,7 @@ echo "[SSL] Copying certs to ${SSL_DIR}/..."
 mkdir -p "${SSL_DIR}"
 docker cp "${OLS_CONTAINER}:/tmp/ssl.key" "${SSL_DIR}/ssl.key"
 docker cp "${OLS_CONTAINER}:/tmp/ssl.crt" "${SSL_DIR}/ssl.crt"
+chmod 644 "${SSL_DIR}/ssl.key" "${SSL_DIR}/ssl.crt" 2>/dev/null || sudo chmod 644 "${SSL_DIR}/ssl.key" "${SSL_DIR}/ssl.crt"
 
 echo "[SSL] Restarting OLS to load new certificates..."
 docker compose restart openlitespeed
