@@ -1,0 +1,76 @@
+services:
+  openlitespeed:
+    image: litespeedtech/openlitespeed:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-wp}-ols
+    entrypoint: ["/bin/bash", "/usr/local/bin/wp-entrypoint.sh"]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "7080:7080"
+    volumes:
+      - ./scripts/entrypoint.sh:/usr/local/bin/wp-entrypoint.sh:ro
+      - ./wordpress:/var/www/vhosts/${DOMAIN}/html
+      - ./ols/httpd.conf:/usr/local/lsws/conf/httpd_config.conf:ro
+      - ./ols/vhost.conf:/usr/local/lsws/conf/templates/docker.conf:ro
+      - ./ssl:/usr/local/lsws/conf/vhosts/${DOMAIN}
+      - ./logs:/usr/local/lsws/logs
+      - ols_data:/usr/local/lsws
+      - redis_socket:/var/run/redis
+      - mariadb_socket:/var/run/mysqld
+    environment:
+      TZ: UTC
+      DOMAIN: ${DOMAIN}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
+      WP_ADMIN_USER: ${WP_ADMIN_USER:-admin}
+      WP_ADMIN_PASSWORD: ${WP_ADMIN_PASSWORD}
+      WP_ADMIN_EMAIL: ${WP_ADMIN_EMAIL}
+      WP_SITE_TITLE: ${WP_SITE_TITLE:-WordPress}
+    depends_on:
+      mariadb:
+        condition: service_started
+      redis:
+        condition: service_started
+    restart: unless-stopped
+
+  mariadb:
+    image: mariadb:12
+    container_name: ${COMPOSE_PROJECT_NAME:-wp}-mariadb
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./mariadb/my.cnf:/etc/mysql/conf.d/my.cnf:ro
+      - mariadb_socket:/var/run/mysqld
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-wp}-redis
+    volumes:
+      - redis_data:/data
+      - redis_socket:/var/run/redis
+    command: >
+      sh -c "mkdir -p /var/run/redis && chown redis:redis /var/run/redis && redis-server
+      --maxmemory ${REDIS_MAXMEMORY:-64mb}
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --unixsocket /var/run/redis/redis.sock
+      --unixsocketperm 777"
+    restart: unless-stopped
+
+volumes:
+  mariadb_data:
+  mariadb_socket:
+  redis_data:
+  redis_socket:
+  ols_data:
+
+networks:
+  default:
+    driver: bridge
