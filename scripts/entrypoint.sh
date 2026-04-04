@@ -93,6 +93,11 @@ setup_lscache() {
     fi
 }
 
+fix_permissions() {
+    log "Fixing wp-content permissions..."
+    chown -R nobody:nogroup "${WP_ROOT}/wp-content"
+}
+
 generate_self_signed_cert() {
     local ssl_dir="/usr/local/lsws/conf/vhosts/localhost/ssl"
     if [ ! -f "${ssl_dir}/ssl.key" ] || [ ! -f "${ssl_dir}/ssl.crt" ]; then
@@ -114,6 +119,7 @@ download_wordpress
 generate_wp_config
 install_wordpress
 setup_lscache
+fix_permissions
 generate_self_signed_cert
 
 log "Starting OpenLiteSpeed..."

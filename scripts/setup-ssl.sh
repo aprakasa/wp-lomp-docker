@@ -87,7 +87,9 @@ echo '[SSL] Installing certificate...'
     --key-file ${SSL_CONTAINER_DIR}/ssl.key \
     --fullchain-file ${SSL_CONTAINER_DIR}/ssl.crt \
     --reloadcmd 'echo done'
-chmod 666 ${SSL_CONTAINER_DIR}/ssl.key ${SSL_CONTAINER_DIR}/ssl.crt
+chown nobody:nogroup ${SSL_CONTAINER_DIR}/ssl.key ${SSL_CONTAINER_DIR}/ssl.crt
+chmod 640 ${SSL_CONTAINER_DIR}/ssl.key
+chmod 644 ${SSL_CONTAINER_DIR}/ssl.crt
 "
 
 echo "[SSL] Restarting OLS to load new certificates..."
