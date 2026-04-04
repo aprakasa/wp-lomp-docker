@@ -1,4 +1,14 @@
+# Environment and secrets
 .env
+
+# Generated at runtime
 logs/
 ssl/
 wordpress/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
