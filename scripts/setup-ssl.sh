@@ -34,7 +34,7 @@ if ! docker ps --format '{{.Names}}' | grep -q "^${OLS_CONTAINER}$"; then
 fi
 
 echo "[SSL] Checking DNS resolution for ${DOMAIN}..."
-SERVER_IP=$(curl -s https://ifconfig.me 2>/dev/null || curl -s https://api.ipify.org 2>/dev/null)
+SERVER_IP=$(curl -s -4 https://ifconfig.me 2>/dev/null || curl -s -4 https://api.ipify.org 2>/dev/null)
 DOMAIN_IP=$(dig +short "${DOMAIN}" 2>/dev/null | tail -1)
 if [ -z "${DOMAIN_IP}" ]; then
     DOMAIN_IP=$(getent hosts "${DOMAIN}" 2>/dev/null | awk '{print $1}')
