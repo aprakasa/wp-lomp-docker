@@ -13,11 +13,26 @@ fi
 DOMAIN="${1:-$DOMAIN}"
 EMAIL="${2:-$EMAIL}"
 
+# Input validation to prevent command injection
+validate_input() {
+    local var="$1"
+    local name="$2"
+    # Only allow alphanumeric, dots, hyphens, and @ for email
+    if [[ ! "$var" =~ ^[a-zA-Z0-9.@-]+$ ]]; then
+        echo "ERROR: Invalid characters in ${name}. Only alphanumeric, ., -, and @ are allowed."
+        exit 1
+    fi
+}
+
 if [ -z "${DOMAIN}" ] || [ -z "${EMAIL}" ]; then
     echo "Usage: ./scripts/setup-ssl.sh [DOMAIN] [EMAIL]"
     echo "   Or set DOMAIN and EMAIL in .env"
     exit 1
 fi
+
+# Validate inputs to prevent command injection
+validate_input "${DOMAIN}" "DOMAIN"
+validate_input "${EMAIL}" "EMAIL"
 
 if [ -z "${COMPOSE_PROJECT_NAME}" ]; then
     COMPOSE_PROJECT_NAME="wp"
