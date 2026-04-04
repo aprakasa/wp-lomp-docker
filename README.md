@@ -123,7 +123,7 @@ docker compose logs -f openlitespeed
 docker compose restart openlitespeed
 
 # Access WordPress CLI
-docker compose exec openlitespeed wp --path=/var/www/vhosts/$DOMAIN/html --allow-root <command>
+docker compose exec openlitespeed wp --path=/var/www/vhosts/localhost/html --allow-root <command>
 ```
 
 ## License
