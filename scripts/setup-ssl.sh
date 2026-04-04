@@ -15,6 +15,7 @@ if [ -z "${COMPOSE_PROJECT_NAME}" ]; then
 fi
 
 OLS_CONTAINER="${COMPOSE_PROJECT_NAME}-ols"
+SSL_DIR="$(cd "$(dirname "$0")/.." && pwd)/ssl"
 
 echo "[SSL] Checking if OLS container is running..."
 if ! docker ps --format '{{.Names}}' | grep -q "^${OLS_CONTAINER}$"; then
@@ -49,11 +50,7 @@ set -e
 
 DOMAIN='${DOMAIN}'
 EMAIL='${EMAIL}'
-VHOST_DIR='/usr/local/lsws/conf/vhosts/${DOMAIN}'
-SSL_DIR='/var/www/vhosts/${DOMAIN}'
-
-mkdir -p \"\${VHOST_DIR}\"
-mkdir -p \"\${SSL_DIR}\"
+WEBROOT='/var/www/vhosts/${DOMAIN}/html'
 
 echo '[SSL] Installing acme.sh if needed...'
 if [ ! -f /root/.acme.sh/acme.sh ]; then
@@ -61,24 +58,22 @@ if [ ! -f /root/.acme.sh/acme.sh ]; then
 fi
 
 echo '[SSL] Requesting certificate for \${DOMAIN}...'
-/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${SSL_DIR}\" --webroot \"\${SSL_DIR}\"
+/root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\"
 
-echo '[SSL] Installing certificate...'
-mkdir -p \"\${VHOST_DIR}\"
+echo '[SSL] Installing certificate to temp location...'
 /root/.acme.sh/acme.sh --install-cert -d \"\${DOMAIN}\" \
-    --key-file \"\${VHOST_DIR}/ssl.key\" \
-    --fullchain-file \"\${VHOST_DIR}/ssl.crt\" \
-    --reloadcmd 'echo SSL cert installed'
-
-echo '[SSL] Copying certs to host-mounted ssl/ directory...'
-cp \"\${VHOST_DIR}/ssl.key\" /usr/local/lsws/conf/vhosts/${DOMAIN}/ssl.key
-cp \"\${VHOST_DIR}/ssl.crt\" /usr/local/lsws/conf/vhosts/${DOMAIN}/ssl.crt
-
-echo '[SSL] Restarting OpenLiteSpeed...'
-/usr/local/lsws/bin/lswsctrl restart
-
-echo '[SSL] SSL certificate installed successfully!'
+    --key-file /tmp/ssl.key \
+    --fullchain-file /tmp/ssl.crt \
+    --reloadcmd 'echo done'
 "
+
+echo "[SSL] Copying certs to ${SSL_DIR}/..."
+mkdir -p "${SSL_DIR}"
+docker cp "${OLS_CONTAINER}:/tmp/ssl.key" "${SSL_DIR}/ssl.key"
+docker cp "${OLS_CONTAINER}:/tmp/ssl.crt" "${SSL_DIR}/ssl.crt"
+
+echo "[SSL] Restarting OLS to load new certificates..."
+docker compose restart openlitespeed
 
 echo "[SSL] Done! HTTPS should now be active for ${DOMAIN}"
 echo "[SSL] Certificate will auto-renew via acme.sh cron job inside the container."
