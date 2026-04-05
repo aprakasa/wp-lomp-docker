@@ -78,6 +78,31 @@ if [ "${DOMAIN_IP}" != "${SERVER_IP}" ]; then
     fi
 fi
 
+echo "[SSL] Verifying ACME challenge path is reachable..."
+ACME_TEST_DIR="/var/www/vhosts/localhost/html/.well-known/acme-challenge"
+docker exec "${OLS_CONTAINER}" bash -c "
+    mkdir -p '${ACME_TEST_DIR}'
+    echo 'test' > '${ACME_TEST_DIR}/test.txt'
+    chown -R nobody:nogroup '${ACME_TEST_DIR}'
+"
+
+ACME_URL="http://${DOMAIN}/.well-known/acme-challenge/test.txt"
+ACME_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "${ACME_URL}" 2>/dev/null)
+docker exec "${OLS_CONTAINER}" rm -f "${ACME_TEST_DIR}/test.txt"
+
+if [ "${ACME_RESPONSE}" != "200" ]; then
+    echo "WARNING: ACME challenge path returned HTTP ${ACME_RESPONSE} (expected 200)."
+    echo "  Tested: ${ACME_URL}"
+    echo "  SSL certificate request may fail. Ensure:"
+    echo "    1. DNS for ${DOMAIN} points to this server"
+    echo "    2. Port 80 is open and reachable from the internet"
+    read -p "Continue anyway? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        exit 1
+    fi
+fi
+
 echo "[SSL] Setting up SSL certificate for ${DOMAIN}..."
 docker exec "${OLS_CONTAINER}" bash -c "
 set -e
