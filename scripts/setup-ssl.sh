@@ -150,10 +150,11 @@ echo "[SSL] Updating WordPress URLs to HTTPS..."
 WP_ROOT="/var/www/vhosts/localhost/html"
 docker exec "${OLS_CONTAINER}" bash -c "
     cd '${WP_ROOT}'
-    if [ -f wp-cli.phar ]; then
-        php wp-cli.phar option update siteurl 'https://${DOMAIN}' --allow-root 2>/dev/null || true
-        php wp-cli.phar option update home 'https://${DOMAIN}' --allow-root 2>/dev/null || true
-        php wp-cli.phar search-replace 'http://${DOMAIN}' 'https://${DOMAIN}' --all-tables --precise --allow-root 2>/dev/null || true
+    if command -v wp &>/dev/null; then
+        wp option update siteurl 'https://${DOMAIN}' --allow-root 2>/dev/null || true
+        wp option update home 'https://${DOMAIN}' --allow-root 2>/dev/null || true
+        wp search-replace 'http://${DOMAIN}' 'https://${DOMAIN}' --all-tables --precise --allow-root 2>/dev/null || true
+        wp cache flush --allow-root 2>/dev/null || true
     fi
 "
 
