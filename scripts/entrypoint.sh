@@ -193,7 +193,11 @@ shutdown() {
 }
 trap shutdown SIGTERM SIGINT
 
-OLS_PID="$(cat /usr/local/lsws/logs/httpd.pid 2>/dev/null)"
+sleep 1
+OLS_PID=""
+if [ -f /usr/local/lsws/logs/httpd.pid ]; then
+    OLS_PID="$(cat /usr/local/lsws/logs/httpd.pid 2>/dev/null || echo "")"
+fi
 if [ -n "${OLS_PID}" ]; then
     while kill -0 "${OLS_PID}" 2>/dev/null; do
         sleep 5
