@@ -100,6 +100,9 @@ define('WP_MEMORY_LIMIT', '256M');
 define('WP_MAX_MEMORY_LIMIT', '512M');
 define('DISALLOW_FILE_EDIT', true);
 define('DISABLE_WP_CRON', true);
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    define('FORCE_SSL_ADMIN', true);
+}
 EXTRA
         chown nobody:nogroup "${WP_ROOT}/wp-config.php"
     fi

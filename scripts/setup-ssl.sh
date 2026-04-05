@@ -146,6 +146,17 @@ chmod 644 ${SSL_CONTAINER_DIR}/ssl.crt
 echo "[SSL] Restarting OLS to load new certificates..."
 docker compose restart openlitespeed
 
+echo "[SSL] Updating WordPress URLs to HTTPS..."
+WP_ROOT="/var/www/vhosts/localhost/html"
+docker exec "${OLS_CONTAINER}" bash -c "
+    cd '${WP_ROOT}'
+    if [ -f wp-cli.phar ]; then
+        php wp-cli.phar option update siteurl 'https://${DOMAIN}' --allow-root 2>/dev/null || true
+        php wp-cli.phar option update home 'https://${DOMAIN}' --allow-root 2>/dev/null || true
+        php wp-cli.phar search-replace 'http://${DOMAIN}' 'https://${DOMAIN}' --all-tables --precise --allow-root 2>/dev/null || true
+    fi
+"
+
 echo "[SSL] Done! HTTPS should now be active for ${DOMAIN}"
 echo "[SSL] NOTE: Auto-renewal is NOT configured (containers are ephemeral)."
 echo "[SSL] Run this script again before the certificate expires (90 days), or set up a host cron job."
