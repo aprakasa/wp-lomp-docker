@@ -99,6 +99,7 @@ define('WP_DEBUG_LOG', false);
 define('WP_MEMORY_LIMIT', '256M');
 define('WP_MAX_MEMORY_LIMIT', '512M');
 define('DISALLOW_FILE_EDIT', true);
+define('DISABLE_WP_CRON', true);
 EXTRA
         chown nobody:nogroup "${WP_ROOT}/wp-config.php"
     fi
@@ -183,7 +184,18 @@ fix_permissions
 generate_self_signed_cert
 configure_ols_workers
 
+setup_wp_cron() {
+    if ! command -v crond &>/dev/null; then
+        apt-get update -qq && apt-get install -y -qq cron >/dev/null 2>&1
+    fi
+    echo "*/5 * * * * root wp --path=${WP_ROOT} --allow-root cron event run --due-now 2>/dev/null" > /etc/cron.d/wp-cron
+    chmod 0644 /etc/cron.d/wp-cron
+    crond
+    log "WP-Cron scheduled (every 5 min via crond)"
+}
+
 log "Starting OpenLiteSpeed..."
+setup_wp_cron
 /usr/local/lsws/bin/lswsctrl start
 
 shutdown() {
