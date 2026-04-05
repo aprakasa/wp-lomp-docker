@@ -113,13 +113,24 @@ WEBROOT='/var/www/vhosts/localhost/html'
 
 echo '[SSL] Installing acme.sh if needed...'
 if [ ! -f /root/.acme.sh/acme.sh ]; then
-    curl https://get.acme.sh | sh -s email=\${EMAIL}
+    curl -sS https://get.acme.sh | sh -s email=\${EMAIL} --noprofile
 fi
 
 echo '[SSL] Requesting certificate for '\${DOMAIN}'...'
-if ! /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt; then
-    echo '[SSL] Initial issue failed, retrying with --force...'
-    /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt --force
+echo '[SSL] (this may take 30-60 seconds...)'
+if ! /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt 2>&1; then
+    echo '[SSL] Initial issue failed.'
+    echo '[SSL] Checking if rate-limited...'
+    if /root/.acme.sh/acme.sh --list 2>/dev/null | grep -q \"\${DOMAIN}\"; then
+        echo '[SSL] Existing cert found, retrying with --force...'
+        /root/.acme.sh/acme.sh --issue -d \"\${DOMAIN}\" -w \"\${WEBROOT}\" --server letsencrypt --force 2>&1
+    else
+        echo '[SSL] ERROR: Certificate issue failed. Common causes:'
+        echo '  - Rate limit exceeded (wait and retry later)'
+        echo '  - DNS not pointing to this server'
+        echo '  - Port 80 not accessible from internet'
+        exit 1
+    fi
 fi
 
 echo '[SSL] Installing certificate...'
