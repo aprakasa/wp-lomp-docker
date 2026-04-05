@@ -160,7 +160,12 @@ configure_ols_workers() {
     local config_file="/usr/local/lsws/conf/httpd_config.conf"
     if [ -f "${config_file}" ]; then
         log "Configuring OLS workers to ${workers}..."
-        sed -i "s/PHP_LSAPI_CHILDREN=[0-9]*/PHP_LSAPI_CHILDREN=${workers}/" "${config_file}"
+        local tmp_file="/tmp/httpd_config.tmp"
+        sed -e "s/PHP_LSAPI_CHILDREN=[0-9]*/PHP_LSAPI_CHILDREN=${workers}/" \
+            -e "s/maxConns\s*35/maxConns                       ${workers}/" \
+            "${config_file}" > "${tmp_file}"
+        cat "${tmp_file}" > "${config_file}"
+        rm -f "${tmp_file}"
     fi
 }
 
