@@ -60,13 +60,16 @@ install_wp_cli() {
     if [ ! -f /usr/local/bin/wp ]; then
         log "Installing wp-cli..."
         curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar
-        curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar.sha512 -o /tmp/wp-cli.phar.sha512
-        if sha512sum -c /tmp/wp-cli.phar.sha512 &>/dev/null; then
+        EXPECTED_HASH=$(curl -sS https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar.sha512)
+        ACTUAL_HASH=$(sha512sum /tmp/wp-cli.phar | awk '{print $1}')
+        if [ "${ACTUAL_HASH}" = "${EXPECTED_HASH}" ]; then
             mv /tmp/wp-cli.phar /usr/local/bin/wp
             chmod +x /usr/local/bin/wp
             log "wp-cli installed and verified"
         else
             log "ERROR: wp-cli checksum verification failed"
+            log "  Expected: ${EXPECTED_HASH}"
+            log "  Actual:   ${ACTUAL_HASH}"
             exit 1
         fi
     fi
