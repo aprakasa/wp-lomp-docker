@@ -185,13 +185,17 @@ generate_self_signed_cert
 configure_ols_workers
 
 setup_wp_cron() {
-    if ! command -v crond &>/dev/null; then
-        apt-get update -qq && apt-get install -y -qq cron >/dev/null 2>&1
+    if ! command -v cron &>/dev/null; then
+        apt-get update -qq && apt-get install -y -qq cron >/dev/null 2>&1 || true
     fi
-    echo "*/5 * * * * root wp --path=${WP_ROOT} --allow-root cron event run --due-now 2>/dev/null" > /etc/cron.d/wp-cron
-    chmod 0644 /etc/cron.d/wp-cron
-    crond
-    log "WP-Cron scheduled (every 5 min via crond)"
+    if command -v cron &>/dev/null; then
+        echo "*/5 * * * * root wp --path=${WP_ROOT} --allow-root cron event run --due-now 2>/dev/null" > /etc/cron.d/wp-cron
+        chmod 0644 /etc/cron.d/wp-cron
+        cron
+        log "WP-Cron scheduled (every 5 min via cron)"
+    else
+        log "WARNING: cron not available, WP-Cron will not run"
+    fi
 }
 
 log "Starting OpenLiteSpeed..."
