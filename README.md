@@ -1,19 +1,86 @@
 # WP-LOMP-Docker
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
+[![Docker Compose](https://img.shields.io/badge/docker--compose-blue.svg?style=flat&logo=docker&logoColor=white)](https://docs.docker.com/compose/)
+[![PHP](https://img.shields.io/badge/PHP-8.x-777BB4.svg?style=flat&logo=php&logoColor=white)](https://php.net/)
+[![OpenLiteSpeed](https://img.shields.io/badge/OpenLiteSpeed-latest-009639.svg?style=flat&logo=openliterspeed&logoColor=white)](https://openlitespeed.org/)
+[![MariaDB](https://img.shields.io/badge/MariaDB-12-003545.svg?style=flat&logo=mariadb&logoColor=white)](https://mariadb.org/)
+[![Redis](https://img.shields.io/badge/Redis-7-DC382D.svg?style=flat&logo=redis&logoColor=white)](https://redis.io/)
+
 WordPress LOMP stack (Linux + OpenLiteSpeed + MariaDB + PHP) deployed via Docker Compose. Uses LSCache plugin with built-in Redis object cache. All inter-service communication uses Unix sockets for maximum performance.
 
+## Features
+
+- **LSCache Plugin** — Full-page cache served by OpenLiteSpeed (bypasses PHP entirely)
+- **Redis Object Cache** — Via Unix socket for minimal latency (`/var/run/redis/redis.sock`)
+- **Unix Sockets** — All inter-service communication uses Unix sockets for maximum performance
+- **Zero Configuration** — Auto-installs WordPress, WP-CLI, and LSCache on first startup
+- **SSL Support** — acme.sh + Let's Encrypt with HTTP-01 webroot validation
+- **Direct File Access** — WordPress files in `./wordpress/` on the host
+
+## Architecture
+
+```
+flowchart TB
+    Client(["🌐 Client"])
+
+    subgraph Frontend
+        OLS["OpenLiteSpeed<br/>LSCache · SSL · :80/:443/:7080"]
+    end
+
+    subgraph Application
+        PHP["PHP 8.x<br/>WordPress · LSAPI · PhpRedis"]
+    end
+
+    subgraph Data
+        MariaDB["MariaDB 12<br/>Database"]
+        Redis["Redis 7<br/>Object Cache"]
+    end
+
+    Client -->|"HTTP/HTTPS"| OLS
+    OLS <-->|"LSAPI Unix socket"| PHP
+    PHP -->|"Unix socket"| MariaDB
+    PHP <-->|"Unix socket"| Redis
+```
+
+## What's Inside
+
+| Component | Version | Notes |
+|-----------|---------|-------|
+| OpenLiteSpeed | latest | Web server with built-in LSCache |
+| PHP | 8.x (bundled with OLS) | LSAPI, PhpRedis 6.3.0 |
+| MariaDB | 12 | InnoDB tuned, socket-only |
+| Redis | 7 (Alpine) | Unix socket, maxmemory with allkeys-lru eviction |
+| WordPress | latest | Auto-installed via WP-CLI |
+| WP-CLI | latest | Auto-installed in entrypoint |
+| LSCache | latest | Full-page cache + Redis object cache |
+| acme.sh | latest | Let's Encrypt SSL via HTTP-01 webroot validation |
+
 ## Quick Start
+
+1. Clone the repository:
 
 ```bash
 git clone git@github.com:aprakasa/wp-lomp-docker.git
 cd wp-lomp-docker
 cp .env.example .env
-# Edit .env with your domain, database credentials, and WordPress admin settings
+```
+
+2. Edit `.env` with your domain, database credentials, and WordPress admin settings:
+
+```bash
 nano .env
+```
+
+3. Start the stack:
+
+```bash
 docker compose up -d
 ```
 
-WordPress will be automatically installed on first startup. Visit `http://your-domain` to see your site.
+4. Access WordPress at `http://your-domain`
+
+WordPress will be automatically installed on first startup.
 
 ## SSL Setup (Production)
 
@@ -28,33 +95,6 @@ Or set `DOMAIN` and `EMAIL` in `.env` and run:
 ```bash
 ./scripts/setup-ssl.sh
 ```
-
-## What's Inside
-
-| Component | Version | Notes |
-|-----------|---------|-------|
-| OpenLiteSpeed | latest | Web server with built-in LSCache |
-| PHP | 8.x (bundled with OLS image) | LSAPI, PhpRedis 6.3.0 |
-| MariaDB | 12 | InnoDB tuned, socket-only |
-| Redis | 7 (Alpine) | Unix socket, maxmemory with allkeys-lru eviction |
-| WordPress | latest | Auto-installed via WP-CLI |
-| WP-CLI | latest | Auto-installed in entrypoint |
-| LSCache | latest | Full-page cache + Redis object cache |
-| acme.sh | latest | Let's Encrypt SSL via HTTP-01 webroot validation |
-
-## Architecture
-
-| Service | Image | Port Exposure |
-|---------|-------|---------------|
-| OpenLiteSpeed | `litespeedtech/openlitespeed:latest` | 80, 443, 7080 (admin) |
-| MariaDB | `mariadb:12` | None (socket only) |
-| Redis | `redis:7-alpine` | None (socket only) |
-
-All inter-service communication uses Unix sockets via shared Docker volumes:
-
-- **PHP ↔ OLS**: LSAPI socket (`uds://tmp/lshttpd/lsphp.sock`)
-- **MariaDB ↔ PHP**: MySQL socket (`/var/run/mysqld/mysqld.sock`)
-- **Redis ↔ PHP**: Redis socket (`/var/run/redis/redis.sock`)
 
 ## Configuration
 
@@ -106,7 +146,7 @@ Access the OpenLiteSpeed admin panel at `http://your-server:7080` with default c
 - Username: `admin`
 - Password: (check `docker compose exec openlitespeed cat /usr/local/lsws/adminpasswd`)
 
-## Commands
+## Common Commands
 
 ```bash
 # Start all services
@@ -124,6 +164,12 @@ docker compose restart openlitespeed
 # Access WordPress CLI
 docker compose exec openlitespeed wp --path=/var/www/vhosts/localhost/html --allow-root <command>
 ```
+
+## Requirements
+
+- Docker Engine 20.10+
+- Docker Compose V2
+- 1GB RAM minimum (2GB recommended)
 
 ## License
 
