@@ -20,7 +20,7 @@ WordPress LOMP stack (Linux + OpenLiteSpeed + MariaDB + PHP) deployed via Docker
 
 ## Architecture
 
-```
+```mermaid
 flowchart TB
     Client(["🌐 Client"])
 
