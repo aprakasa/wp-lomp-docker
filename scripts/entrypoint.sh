@@ -111,8 +111,12 @@ EXTRA
 install_wordpress() {
     if ! ${WP_CLI} core is-installed 2>/dev/null; then
         log "Installing WordPress..."
+        local wp_scheme="http"
+        if [ "${SSL}" = "1" ]; then
+            wp_scheme="https"
+        fi
         ${WP_CLI} core install \
-            --url="http://${DOMAIN}" \
+            --url="${wp_scheme}://${DOMAIN}" \
             --title="${WP_SITE_TITLE}" \
             --admin_user="${WP_ADMIN_USER}" \
             --admin_password="${WP_ADMIN_PASSWORD}" \
@@ -143,6 +147,16 @@ setup_lscache() {
 fix_permissions() {
     log "Fixing WordPress file permissions..."
     find "${WP_ROOT}" -not -user nobody -exec chown nobody:nogroup {} +
+}
+
+update_wp_urls_https() {
+    if [ "${SSL}" = "1" ] && ${WP_CLI} core is-installed 2>/dev/null; then
+        log "Updating WordPress URLs to HTTPS..."
+        ${WP_CLI} option update siteurl "https://${DOMAIN}" --allow-root 2>/dev/null || true
+        ${WP_CLI} option update home "https://${DOMAIN}" --allow-root 2>/dev/null || true
+        ${WP_CLI} search-replace "http://${DOMAIN}" "https://${DOMAIN}" --all-tables --precise --allow-root 2>/dev/null || true
+        ${WP_CLI} cache flush --allow-root 2>/dev/null || true
+    fi
 }
 
 generate_self_signed_cert() {
@@ -184,6 +198,7 @@ generate_wp_config
 install_wordpress
 setup_lscache
 fix_permissions
+update_wp_urls_https
 generate_self_signed_cert
 configure_ols_workers
 

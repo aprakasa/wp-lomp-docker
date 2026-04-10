@@ -15,7 +15,7 @@ WordPress LOMP stack (Linux + OpenLiteSpeed + MariaDB + PHP) deployed via Docker
 - **Redis Object Cache** — Via Unix socket for minimal latency (`/var/run/redis/redis.sock`)
 - **Unix Sockets** — All inter-service communication uses Unix sockets for maximum performance
 - **Zero Configuration** — Auto-installs WordPress, WP-CLI, and LSCache on first startup
-- **SSL Support** — acme.sh + Let's Encrypt with HTTP-01 webroot validation
+- **Automatic SSL** — Let's Encrypt via acme.sh sidecar, auto-provisioned on startup with automatic renewal
 - **Direct File Access** — WordPress files in `./wordpress/` on the host
 
 ## Architecture
@@ -32,6 +32,10 @@ flowchart TB
         PHP["PHP 8.x<br/>WordPress · LSAPI · PhpRedis"]
     end
 
+    subgraph SSL
+        ACME["acme.sh<br/>Let's Encrypt · Auto-renewal"]
+    end
+
     subgraph Data
         MariaDB["MariaDB 12<br/>Database"]
         Redis["Redis 7<br/>Object Cache"]
@@ -41,6 +45,7 @@ flowchart TB
     OLS <-->|"LSAPI Unix socket"| PHP
     PHP -->|"Unix socket"| MariaDB
     PHP <-->|"Unix socket"| Redis
+    ACME -->|"Issues/renews certs"| OLS
 ```
 
 ## What's Inside
@@ -54,7 +59,7 @@ flowchart TB
 | WordPress | latest | Auto-installed via WP-CLI |
 | WP-CLI | latest | Auto-installed in entrypoint |
 | LSCache | latest | Full-page cache + Redis object cache |
-| acme.sh | latest | Let's Encrypt SSL via HTTP-01 webroot validation |
+| acme.sh | latest | Let's Encrypt SSL sidecar with auto-renewal |
 
 ## Quick Start
 
@@ -84,17 +89,30 @@ WordPress will be automatically installed on first startup.
 
 ## SSL Setup (Production)
 
-After DNS is pointing to your server:
+SSL certificates are **automatically provisioned** on first startup when enabled. Set these variables in `.env`:
 
 ```bash
-./scripts/setup-ssl.sh your-domain.com admin@your-domain.com
+SSL=1                    # Enable SSL
+SSL_STAGING=0            # Use 1 for testing (avoids Let's Encrypt rate limits)
+DOMAIN=your-domain.com
+EMAIL=admin@your-domain.com
 ```
 
-Or set `DOMAIN` and `EMAIL` in `.env` and run:
+Then start the stack:
 
 ```bash
-./scripts/setup-ssl.sh
+docker compose up -d
 ```
+
+The `acme.sh` sidecar container will:
+1. Wait for OpenLiteSpeed to be healthy
+2. Issue a Let's Encrypt certificate via HTTP-01 webroot validation
+3. Install the certificate to the shared `ssl/` directory
+4. Start a daemon for automatic daily renewal checks
+
+A self-signed certificate is used as fallback until the real certificate is issued.
+
+> **Note:** The old `scripts/setup-ssl.sh` script is still available for manual SSL provisioning if needed.
 
 ## Configuration
 
@@ -115,6 +133,8 @@ All configuration is done via `.env` (copy from `.env.example`):
 | `WP_SITE_TITLE` | `WordPress` | Site title |
 | `WORDPRESS_TABLE_PREFIX` | `wp_` | Database table prefix |
 | `OLS_WORKERS` | `4` | PHP LSAPI children (worker processes) |
+| `SSL` | `0` | Enable Let's Encrypt SSL (`1` to enable) |
+| `SSL_STAGING` | `0` | Use Let's Encrypt staging (`1` to avoid rate limits) |
 | `TZ` | `UTC` | Timezone |
 
 ### Production Domain Setup

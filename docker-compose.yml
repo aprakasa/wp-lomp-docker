@@ -20,11 +20,14 @@ services:
       - acme_data:/root/.acme.sh
       - redis_socket:/var/run/redis
       - mariadb_socket:/var/run/mysqld
+      - certbot_webroot:/var/www/certbot
     environment:
       TZ: ${TZ:-UTC}
       DOMAIN: ${DOMAIN}
       EMAIL: ${EMAIL:-}
       OLS_WORKERS: ${OLS_WORKERS:-4}
+      SSL: ${SSL:-0}
+      SSL_STAGING: ${SSL_STAGING:-0}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -39,6 +42,12 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost/ > /dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
 
   mariadb:
@@ -80,6 +89,27 @@ services:
       retries: 30
     restart: unless-stopped
 
+  acme-sh:
+    image: neilpang/acme.sh
+    container_name: ${COMPOSE_PROJECT_NAME:-wp}-acme-sh
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./ssl:/ssl
+      - certbot_webroot:/webroot
+      - acme_data:/acme.sh
+      - ./acme-sh/entrypoint.sh:/entrypoint.sh:ro
+    depends_on:
+      openlitespeed:
+        condition: service_healthy
+    environment:
+      - DOMAIN=${DOMAIN}
+      - EMAIL=${EMAIL:-}
+      - SSL=${SSL:-0}
+      - SSL_STAGING=${SSL_STAGING:-0}
+      - OLS_CONTAINER=${COMPOSE_PROJECT_NAME:-wp}-ols
+    entrypoint: ["/entrypoint.sh"]
+
 volumes:
   mariadb_data:
   mariadb_socket:
@@ -88,6 +118,7 @@ volumes:
   ols_admin:
   ols_tmp:
   acme_data:
+  certbot_webroot:
 
 networks:
   default:
