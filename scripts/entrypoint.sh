@@ -216,7 +216,33 @@ setup_wp_cron() {
     fi
 }
 
+install_inotify_tools() {
+    if ! command -v inotifywait &>/dev/null; then
+        log "Installing inotify-tools..."
+        apt-get update -qq && apt-get install -y -qq inotify-tools >/dev/null 2>&1
+    fi
+}
+
+watch_htaccess() {
+    local htaccess="${WP_ROOT}/.htaccess"
+    if ! command -v inotifywait &>/dev/null; then
+        return
+    fi
+    (
+        while [ ! -f "${htaccess}" ]; do
+            sleep 5
+        done
+        log ".htaccess watcher started"
+        while inotifywait -e modify,create,delete,move "${htaccess}" 2>/dev/null; do
+            log ".htaccess changed, restarting OLS..."
+            /usr/local/lsws/bin/lswsctrl restart
+        done
+    ) &
+}
+
 log "Starting OpenLiteSpeed..."
+install_inotify_tools
+watch_htaccess
 setup_wp_cron
 /usr/local/lsws/bin/lswsctrl start
 
