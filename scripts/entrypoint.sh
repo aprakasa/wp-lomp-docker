@@ -241,6 +241,7 @@ watch_htaccess() {
 }
 
 log "Starting OpenLiteSpeed..."
+mkdir -p /var/www/certbot/.well-known/acme-challenge
 install_inotify_tools
 watch_htaccess
 setup_wp_cron
